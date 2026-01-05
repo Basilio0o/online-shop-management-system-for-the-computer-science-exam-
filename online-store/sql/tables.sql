@@ -37,7 +37,7 @@
 -- 	history_id SERIAL PRIMARY KEY,
 -- 	order_id INT,
 -- 	FOREIGN KEY (order_id) REFERENCES orders(order_id),
--- 	old_status VARCHAR(20) NOT NULL,
+-- 	old_status VARCHAR(20),
 -- 	new_status VARCHAR(20) NOT NULL,
 -- 	changed_at TIMESTAMP,
 -- 	changed_by INT,

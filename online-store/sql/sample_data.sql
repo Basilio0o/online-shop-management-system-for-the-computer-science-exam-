@@ -1,0 +1,14 @@
+-- INSERT INTO users (name, email, role, password_hash, loyalty_level)
+-- VALUES
+-- 	('Иван Петров', 'ivan.petrov@mail.com', 'customer', 'hash_ivan', 0),
+-- 	('Анна Смирнова', 'anna.smirnova@mail.com', 'customer', 'hash_anna', 1),
+-- 	('Олег Кузнецов', 'oleg.k@mail.com', 'manager', 'hash_oleg', 0),
+-- 	('Мария Орлова', 'maria.orlova@mail.com', 'customer', 'hash_maria', 0),
+-- 	('Админ', 'admin@mail.com', 'admin', 'hash_admin', 1);
+
+-- INSERT INTO products (name, price, stock_quantity) VALUES
+-- 	('Ноутбук', 75000.00, 20),
+-- 	('Смартфон', 45000.00, 15),
+-- 	('Наушники', 5000.00, 30),
+-- 	('Клавиатура', 3500.00, 40),
+-- 	('Мышь', 2000.00, 25);
