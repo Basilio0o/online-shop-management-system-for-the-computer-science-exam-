@@ -24,7 +24,7 @@
 -- );
 
 -- CREATE TABLE order_items (
--- 	order_item_id SERIAL PRIMARY KEY,
+-- 	order_item_id PRIMARY KEY,
 -- 	order_id INT,
 -- 	FOREIGN KEY (order_id) REFERENCES orders(order_id),
 -- 	product_id INT,

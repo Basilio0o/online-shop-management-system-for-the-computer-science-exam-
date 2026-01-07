@@ -1,16 +1,3 @@
-CREATE OR REPLACE FUNCTION update_order_date_on_status_change()
-RETURNS TRIGGER
-LANGUAGE plpgsql
-AS $$
-BEGIN
-	IF NEW.status IS DISTINCT FROM OLD.status THEN
-		NEW.order_date := NOW();
-	END IF;
-
-	RETURN NEW;
-END;
-$$;
-
 CREATE OR REPLACE FUNCTION getOrderStatusHistory(oi INT)
 RETURNS TABLE (
 	history_id INT,
@@ -137,5 +124,31 @@ BEGIN
 	END IF;
 
 	RETURN FALSE;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION getAuditLogByUser(ui INT)
+RETURNS TABLE (
+	log_id INT,
+	entity_type VARCHAR(20),
+	entity_id INT,
+	operation VARCHAR(20),
+	performed_at TIMESTAMP
+)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+	PERFORM 1
+	FROM users
+	WHERE user_id = ui;
+
+	IF NOT FOUND THEN
+		RAISE EXCEPTION 'Пользователь с id % не найден', ui;
+	END IF;
+
+	RETURN QUERY
+	SELECT * FROM audit_log
+	WHERE user_id = ui
+	ORDER BY performed_at ASC;
 END;
 $$;

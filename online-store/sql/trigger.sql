@@ -2,3 +2,21 @@ CREATE TRIGGER trg_update_order_date
 BEFORE UPDATE ON orders
 FOR EACH ROW
 EXECUTE FUNCTION update_order_date_on_status_change();
+
+CREATE TRIGGER audit_users
+AFTER INSERT OR UPDATE OR DELETE
+ON users
+FOR EACH ROW 
+EXECUTE FUNCTION audit_log_users();
+
+CREATE TRIGGER audit_products
+AFTER INSERT OR UPDATE OR DELETE
+ON users
+FOR EACH ROW 
+EXECUTE FUNCTION audit_log_users();
+
+CREATE TRIGGER audit_orders
+AFTER INSERT OR UPDATE OR DELETE
+ON users
+FOR EACH ROW 
+EXECUTE FUNCTION audit_log_orders();
