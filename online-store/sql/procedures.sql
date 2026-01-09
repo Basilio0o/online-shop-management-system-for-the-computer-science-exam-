@@ -1,13 +1,18 @@
+CREATE TYPE order_items_t AS (
+	product_id INT,
+	quantity INT
+);
+
 CREATE OR REPLACE PROCEDURE createOrder (
 	ui INT,
-	items JSONB
+	items order_items_t[]
 )
 LANGUAGE plpgsql
 AS $$
 DECLARE 
 	oi INT;
 	tp DECIMAL(10,2) := 0;
-	item JSONB;
+	item order_items_t;
 	pi INT;
 	q INT;
 	sq INT;
@@ -25,36 +30,30 @@ BEGIN
 	VALUES (ui, 'pending', 0, NOW())
 	RETURNING order_id INTO oi;
 
-	FOR item IN SELECT * FROM jsonb_array_elements(items)
-	LOOP
-		pi := (item->>'product_id')::INT;
-		q := (item->>'quantity')::INT;
-		
+	FOREACH item IN ARRAY items LOOP
 		SELECT price, stock_quantity
 		INTO p, sq
 		FROM products 
-		WHERE product_id = pi
+		WHERE product_id = item.product_id
 		FOR UPDATE;
 	
 		IF NOT FOUND THEN
-			RAISE EXCEPTION 'Товар с id % не найден', pi;
+			RAISE EXCEPTION 'Товар с id % не найден', item.product_id;
 		END IF;
 	
 		IF q > sq THEN
-			RAISE EXCEPTION 'Недостаточно товара на складе (product_id = %)', pi;
+			RAISE EXCEPTION 'Недостаточно товара на складе (product_id = %)', item.product_id;
 		END IF;
 	
 		INSERT INTO order_items (order_id, product_id, quantity, price)
-		VALUES (oi, pi, q, p);
+		VALUES (oi, item.product_id, item.quantity, p);
 	
 		UPDATE products 
-		SET stock_quantity = sq - q
-		WHERE product_id = pi;
+		SET stock_quantity = sq - item.quantity
+		WHERE product_id = item.product_id;
 	
-		tp := tp + (p*q);
+		tp := tp + (p*item.quantity);
 	
-		INSERT INTO audit_log (entity_type, entity_id, operation, performed_by, performed_at)
-		VALUES ('product', pi, 'update', ui, NOW());
 	END LOOP;
 
 	UPDATE orders
@@ -63,12 +62,10 @@ BEGIN
 
 	INSERT INTO order_status_history (order_id, old_status, new_status, changed_at, changed_by)
 	VALUES (oi, NULL, 'pending', NOW(), ui);
-	
-	INSERT INTO audit_log (entity_type, entity_id, operation, performed_by, performed_at)
-	VALUES ('order', oi, 'insert', ui, NOW());
 
 END;
 $$;
+
 
 CREATE OR REPLACE PROCEDURE update_Order_status (
 	ui INT,
@@ -103,9 +100,6 @@ BEGIN
 
 	INSERT INTO order_status_history (order_id, old_status, new_status, changed_at, changed_by)
 	VALUES (oi, os, s, NOW(), ui);
-	
-	INSERT INTO audit_log (entity_type, entity_id, operation, performed_by, performed_at)
-	VALUES ('order', oi, 'update', ui, NOW());
 
 END;
 $$;

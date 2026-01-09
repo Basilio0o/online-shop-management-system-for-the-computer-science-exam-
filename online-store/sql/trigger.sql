@@ -11,12 +11,18 @@ EXECUTE FUNCTION audit_log_users();
 
 CREATE TRIGGER audit_products
 AFTER INSERT OR UPDATE OR DELETE
-ON users
+ON products
 FOR EACH ROW 
-EXECUTE FUNCTION audit_log_users();
+EXECUTE FUNCTION audit_log_products();
 
 CREATE TRIGGER audit_orders
 AFTER INSERT OR UPDATE OR DELETE
-ON users
+ON orders
 FOR EACH ROW 
 EXECUTE FUNCTION audit_log_orders();
+
+CREATE TRIGGER audit_order_items
+AFTER INSERT OR UPDATE OR DELETE
+ON order_items
+FOR EACH ROW 
+EXECUTE FUNCTION audit_log_order_items();

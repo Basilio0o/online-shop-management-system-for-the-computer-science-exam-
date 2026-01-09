@@ -23,15 +23,15 @@
 -- 	order_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 -- );
 
--- CREATE TABLE order_items (
--- 	order_item_id PRIMARY KEY,
--- 	order_id INT,
--- 	FOREIGN KEY (order_id) REFERENCES orders(order_id),
--- 	product_id INT,
--- 	FOREIGN KEY (product_id) REFERENCES products(product_id),
--- 	quantity INT NOT NULL CHECK (quantity > 0),
--- 	price DECIMAL(10,2) NOT NULL CHECK (price > 0)
--- );
+CREATE TABLE order_items (
+	order_item_id SERIAL PRIMARY KEY,
+	order_id INT,
+	FOREIGN KEY (order_id) REFERENCES orders(order_id),
+	product_id INT,
+	FOREIGN KEY (product_id) REFERENCES products(product_id),
+	quantity INT NOT NULL CHECK (quantity > 0),
+	price DECIMAL(10,2) NOT NULL CHECK (price > 0)
+);
 
 -- CREATE TABLE order_status_history (
 -- 	history_id SERIAL PRIMARY KEY,
