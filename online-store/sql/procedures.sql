@@ -103,3 +103,117 @@ BEGIN
 
 END;
 $$;
+
+CREATE OR REPLACE PROCEDURE addToOrder (
+	oi INT,
+	pi INT,
+	quantity INT
+)
+LANGUAGE plpgsql
+AS $$
+DECLARE 
+	s VARCHAR(20);
+	p DECIMAL(10,2);
+	tp DECIMAL(10,2);
+	sq INT;
+BEGIN
+	SELECT status, total_price
+	INTO s, tp
+	FROM orders
+	WHERE order_id = oi;
+
+	IF NOT FOUND THEN
+        RAISE EXCEPTION 'Заказ с id % не найден', oi;
+    END IF;
+  
+	IF s != 'pending' THEN
+		RAISE EXCEPTION 'В заказ с id % нельзя добавить товар', oi;
+	END IF;
+	
+	SELECT price, stock_quantity
+	INTO p, sq
+	FROM products 
+	WHERE product_id = pi
+	FOR UPDATE;
+
+	IF NOT FOUND THEN
+		RAISE EXCEPTION 'Товар с id % не найден', pi;
+	END IF;
+
+	IF quantity > sq THEN
+		RAISE EXCEPTION 'Недостаточно товара на складе (product_id = %)', pi;
+	END IF;
+
+	INSERT INTO order_items (order_id, product_id, quantity, price)
+	VALUES (oi, pi, quantity, p);
+
+	UPDATE products 
+	SET stock_quantity = sq - quantity
+	WHERE product_id = pi;
+
+	tp := tp + p * quantity;
+
+	UPDATE orders
+	SET total_price = tp
+	WHERE order_id = oi;
+
+END;
+$$;
+
+CREATE OR REPLACE PROCEDURE deleteFromOrder (
+	oi INT,
+	pi INT
+)
+LANGUAGE plpgsql
+AS $$
+DECLARE 
+	s VARCHAR(20);
+	p DECIMAL(10,2);
+	tp DECIMAL(10,2);
+	q INT;
+	sq INT;
+BEGIN
+	SELECT status, total_price
+	INTO s, tp
+	FROM orders
+	WHERE order_id = oi;
+
+	IF NOT FOUND THEN
+        RAISE EXCEPTION 'Заказ с id % не найден', oi;
+    END IF;
+  
+	IF s != 'pending' THEN
+		RAISE EXCEPTION 'Из заказа с id % нельзя убрать товар', oi;
+	END IF;
+	
+	SELECT stock_quantity
+	INTO sq
+	FROM products 
+	WHERE product_id = pi
+	FOR UPDATE;
+
+	IF NOT FOUND THEN
+		RAISE EXCEPTION 'Товар с id % не найден', pi;
+	END IF;
+
+	DELETE FROM order_items
+    WHERE order_id = oi AND product_id = pi
+    RETURNING quantity, price 
+	INTO q, p;
+
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'Товар с id % не найден в заказе %', pi, oi;
+    END IF;
+
+	UPDATE products 
+	SET stock_quantity = sq + q
+	WHERE product_id = pi;
+
+	tp := tp - p * q;
+
+	UPDATE orders
+	SET total_price = GREATEST(tp, 0)
+	WHERE order_id = oi;
+
+END;
+$$;
