@@ -1,6 +1,9 @@
 #include "../include/Admin.h"
 
 
+Admin::Admin(unique_ptr<DatabaseConnection<string>>& db, int id, const string& n, const string& e, int l) :
+	User(db, id, n, e, "admin", l) {}
+
 int Admin::addProduct(unique_ptr<DatabaseConnection<string>>& db, const string& product_name, double price, int stock_quantity) {
 	string query = "INSERT INTO products (name, price,stock_quantity)\n"
 			"VALUES (" + db->getConnection().quote(product_name) + ", " + to_string(price) + ", " + to_string(stock_quantity) +
@@ -35,6 +38,10 @@ void Admin::deleteProduct(unique_ptr<DatabaseConnection<string>>& db, int id) {
 
 pqxx::result Admin::viewAllOrders(unique_ptr<DatabaseConnection<string>>& db) {
 	return db->executeQuery("SELECT order_id, status FROM orders;");
+}
+pqxx::result Admin::viewOrderDetails(unique_ptr<DatabaseConnection<string>>& db, int id) {
+	return db->executeQuery("SELECT user_id, status, total_price, order_date FROM orders\nWHERE order_id = "
+			+ to_string(id) + ";");
 }
 
 void Admin::updateOrderStatus(unique_ptr<DatabaseConnection<string>>& db, int id, const string& status) {

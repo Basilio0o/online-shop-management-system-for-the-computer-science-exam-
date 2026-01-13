@@ -1,5 +1,4 @@
-#ifndef PAYMENTSTRATEGY_H
-#define PAYMENTSTRATEGY_H
+#pragma once
 
 #include <iostream>
 #include <string>
@@ -37,5 +36,3 @@ public:
 
 	void pay(double amount) override;
 };
-
-#endif

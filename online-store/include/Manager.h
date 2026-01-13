@@ -12,7 +12,8 @@ using namespace std;
 
 class Manager : public User {
 public:
-	void updateOrderStatus(unique_ptr<DatabaseConnection<string>>& db, int id, const string& s = "completed") override;
+	void updateOrderStatus(unique_ptr<DatabaseConnection<string>>& db, int id, const string& s) override;
+
 	void updateStock(unique_ptr<DatabaseConnection<string>>& db, int id, int stock_quantity);
 
 	pqxx::result getOrderStatusHistory(unique_ptr<DatabaseConnection<string>>& db, int oi) override;

@@ -1,7 +1,7 @@
 #include "../include/Manager.h"
 #include "../include/Order.h"
 
-void Manager::updateOrderStatus(unique_ptr<DatabaseConnection<string>>& db, int id, const string& s = "completed") {
+void Manager::updateOrderStatus(unique_ptr<DatabaseConnection<string>>& db, int id, const string& s) {
 	string query = "CALL update_Order_status(" + to_string(getUserId()) + ", "
 			+ to_string(id) + ", "
 			+ db->getConnection().quote(s) + ");";

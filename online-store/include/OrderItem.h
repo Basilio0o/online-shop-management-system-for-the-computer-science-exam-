@@ -10,7 +10,7 @@ private:
 	shared_ptr<Product> product;
 	int quantity;
 public:
-	OrderItem(shared_ptr<Product>& p, int q);
+	OrderItem(const shared_ptr<Product>& p, int q);
 
 	double getTotal_item();
 

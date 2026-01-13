@@ -3,6 +3,7 @@
 using namespace std;
 
 #include "../include/Order.h"
+#include "../include/Product.h"
 #include "../include/DatabaseConnection.h"
 #include "pqxx/pqxx"
 #include <string>
@@ -16,14 +17,12 @@ private:
 	string name;
 	string email;
 	string role;
-	string password;
 	int loyalty_level;
 	vector<shared_ptr<Order>> orders;
 
 	string buildOrderItemArray(pqxx::work& txn, vector<pair<shared_ptr<Product>, int>>& list);
 public:
-	User(unique_ptr<DatabaseConnection<string>>& db, int u, const string& n,
-			const string& e, const string& r, const string& p, int l);
+	User(unique_ptr<DatabaseConnection<string>>& db, int id, const string& n, const string& e, const string& r, int l);
 
 	virtual ~User() = default;
 

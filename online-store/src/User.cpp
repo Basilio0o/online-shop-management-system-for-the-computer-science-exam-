@@ -1,5 +1,6 @@
 #include "../include/User.h"
 
+
 string User::buildOrderItemArray(pqxx::work& txn, vector<pair<shared_ptr<Product>, int>>& list) {
 	if (list.empty()) {
 		throw runtime_error("Ваш список товаров пуст");
@@ -18,10 +19,8 @@ string User::buildOrderItemArray(pqxx::work& txn, vector<pair<shared_ptr<Product
 	return result;
 }
 
-User::User(unique_ptr<DatabaseConnection<string>>& db, int u, const string& n,
-		const string& e, const string& r, const string& p, int l) :
-			user_id(u), email(e), role(r), password(p), loyalty_level(l)
-{
+User::User(unique_ptr<DatabaseConnection<string>>& db, int id, const string& n, const string& e, const string& r, int l) :
+	user_id(id), name(n), email(e), role(r), loyalty_level(l) {
 	string query = "SET app.current_user_id = " + db->getConnection().quote(to_string(user_id)) + ";";
 
 	db->executeNonQuery(query);
@@ -29,10 +28,7 @@ User::User(unique_ptr<DatabaseConnection<string>>& db, int u, const string& n,
 	auto loaded = OrderService::loadUserOrders(db, user_id);
 
 	orders = move(loaded);
-
 }
-
-virtual User::~User() = default;
 
 bool User::canChangeStatus(const string& role) {
 	auto canChangeStatus = [](const string& role) {
