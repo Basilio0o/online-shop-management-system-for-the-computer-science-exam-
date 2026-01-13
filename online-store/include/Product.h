@@ -2,10 +2,10 @@
 
 using namespace std;
 
+#include "../include/DatabaseConnection.h"
 #include <iostream>
 #include <memory>
 #include <string>
-#include "../include/DatabaseConnection.h"
 
 class Product {
 private:
@@ -16,7 +16,7 @@ private:
 public:
 	Product(int id, const string& n, double p, int sq);
 
-	int getId();
+	int getProductId();
 
 	string getName();
 

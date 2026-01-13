@@ -1,8 +1,9 @@
 #pragma once
+
 using namespace std;
 
-#include <memory>
 #include "../include/Product.h"
+#include <memory>
 
 class OrderItem {
 private:

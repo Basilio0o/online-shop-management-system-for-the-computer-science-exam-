@@ -4,11 +4,11 @@
 OrderItem::OrderItem(shared_ptr<Product>& p, int q) : product(p), quantity(q) {}
 
 double OrderItem::getTotal_item(){
-	return quantity*product->getPrice;
+	return quantity * product->getPrice();
 }
 
 int OrderItem::getProductId(){
-	return product->getId();
+	return product->getProductId();
 }
 
 int OrderItem::getQuantity(){

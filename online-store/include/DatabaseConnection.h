@@ -1,10 +1,8 @@
-#ifndef DATABASECONNECTION_H
-#define DATABASECONNECTION_H
+#pragma once
 
-#include <iostream>
 #include <pqxx/pqxx>
 #include <string>
-#include <memory>
+#include <iostream>
 
 template <typename T>
 class DatabaseConnection {
@@ -21,5 +19,3 @@ public:
 
 	bool isConnected();
 };
-
-#endif

@@ -1,10 +1,8 @@
 #include "../include/Product.h"
-//#include "../include/DatabaseConnection.h"
-#include "DatabaseConnection.h"
 
 Product::Product(int id, const string& n, double p, int sq) : product_id(id), name(n), price(p), stock_quantity(sq) {}
 
-int Product::getId() {
+int Product::getProductId() {
 	return product_id;
 }
 
