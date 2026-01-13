@@ -1,163 +1,17 @@
 #include <iostream>
+#include <fstream>
 #include <pqxx/pqxx>
 #include <string>
 #include <vector>
 #include <memory>
 #include <algorithm>
 
+#include "../include/DatabaseConnection.h"
+#include "../include/PaymentStrategy.h"
+#include "../include/Product.h"
+#include "../include/OrderItem.h"
+
 using namespace std;
-
-template <typename T>
-class DatabaseConnection {
-private:
-	pqxx::connection conn;
-
-public:
-	DatabaseConnection(const T& connectionString) : conn(connectionString) {}
-
-	pqxx::result executeQuery(const string& s) {
-		pqxx::result res;
-
-		pqxx::work txn(conn);
-
-		res = txn.exec(s);
-
-		txn.commit();
-
-		return res;
-	}
-
-	void executeNonQuery(const string& s) {
-		pqxx::work txn(conn);
-
-		txn.exec(s);
-
-		txn.commit();
-	}
-
-	pqxx::connection& getConnection() {
-		return conn;
-	}
-
-	bool isConnected() {
-		return conn.is_open();
-	}
-
-};
-
-class PaymentStrategy {
-public:
-	virtual void pay(double amount) = 0;
-	virtual ~PaymentStrategy() = default;
-};
-
-class CardPayment : public PaymentStrategy {
-private:
-	string cardNumber;
-	string cardHolder;
-public:
-	CardPayment(const string& cn, const string& ch) : cardNumber(cn), cardHolder(ch) {}
-
-	void pay(double amount) override {
-		cout << "Оплата картой\nСумма: " << amount << "руб.\nКарта: **** **** **** "
-				<< cardNumber.substr(cardNumber.size() - 4) << "\nСовершил оплату: " << cardHolder << endl;
-	}
-};
-
-class WalletPayment : public PaymentStrategy {
-private:
-	string walletId;
-public:
-	WalletPayment(const string& id) : walletId(id) {}
-
-	void pay(double amount) override {
-		cout << "Оплата электронным кошельком\nСумма: " << amount << "руб.\nКошелёк: " << walletId << endl;
-	}
-};
-
-class SBPPayment : public PaymentStrategy {
-private:
-	string phoneNumber;
-public:
-	SBPPayment(const string& pn) : phoneNumber(pn) {}
-
-	void pay(double amount) override {
-		cout << "Оплата Через СПБ\nСумма: " << amount << "руб.\nТелефон: " << phoneNumber << endl;
-	}
-};
-
-class Product {
-private:
-	int product_id;
-	string name;
-	double price;
-	int stock_quantity;
-public:
-	Product(int id, const string& n, double p, int sq) : product_id(id), name(n), price(p), stock_quantity(sq) {}
-
-	int getId() const {
-		return product_id;
-	}
-
-	string getName() const {
-		return name;
-	}
-
-	double getPrice() const {
-		return price;
-	}
-
-	int getStock() const {
-		return stock_quantity;
-	}
-
-	void decreaseStock(int q) {
-		if(q > stock_quantity) {
-			throw runtime_error("Недостаточно товара на склае");
-		}
-		stock_quantity -= q;
-	}
-};
-
-class ProductRepository {
-public:
-	static shared_ptr<Product> load(unique_ptr<DatabaseConnection<string>>& db, int product_id) {
-	auto res = db->executeQuery(
-	  "SELECT * FROM products WHERE product_id = " + to_string(product_id)
-	);
-
-	if (res.empty())
-	  throw runtime_error("Товар не найден");
-
-	return make_shared<Product>(
-	  res[0]["product_id"].as<int>(),
-	  res[0]["name"].c_str(),
-	  res[0]["price"].as<double>(),
-	  res[0]["stock_quantity"].as<int>()
-	);
-	}
-};
-
-class OrderItem {
-private:
-	shared_ptr<Product> product;
-	int quantity;
-public:
-	OrderItem(shared_ptr<Product>& p, int q) : product(p), quantity(q) {}
-
-	double getTotal() {
-		return quantity*product->getPrice();
-	}
-
-	int getProductId() {
-		return product->getId();
-	}
-
-	int getQuantity() {
-		return quantity;
-	}
-
-};
 
 class Order {
 private:
@@ -165,7 +19,6 @@ private:
 	string status;
 	vector<OrderItem> items;
 	unique_ptr<PaymentStrategy> payment;
-
 public:
 	Order(int id, const string& s) : order_id(id), status(s) {}
 
@@ -189,27 +42,36 @@ public:
 	int getId() {
 		return order_id;
 	}
+
+	void setPayment(unique_ptr<PaymentStrategy> p) {
+		payment = move(p);
+	}
+
+	double getTotal_order() {
+		double price = 0;
+		for(auto item : items) {
+			price += item.getTotal_item();
+		}
+		return price;
+	}
 };
 
 class OrderRepository {
 public:
-	static vector<shared_ptr<Order>> loadUserOrders(unique_ptr<DatabaseConnection<string>>& db, int user_id) {
-    vector<shared_ptr<Order>> orders;
+	static vector<shared_ptr<Order>> loadUserOrders(unique_ptr<DatabaseConnection<string>>& db, int user_id){
+		vector<shared_ptr<Order>> orders;
 
-    auto res = db->executeQuery(
-      "SELECT * FROM orders WHERE user_id = " + to_string(user_id)
-    );
+		auto res = db->executeQuery("SELECT * FROM orders WHERE user_id = " + to_string(user_id));
 
-    for (const auto& row : res) {
-      auto order = make_shared<Order>(row["order_id"].as<int>(), row["status"].c_str());
+		for (const auto& row : res) {
+		auto order = make_shared<Order>(row["order_id"].as<int>(), row["status"].c_str());
 
-      loadItems(db, *order);
-      orders.push_back(order);
-    }
+		loadItems(db, *order);
+		orders.push_back(order);
+		}
 
-    return orders;
-  }
-
+		return orders;
+	}
 private:
 	static void loadItems(unique_ptr<DatabaseConnection<string>>& db, Order& order) {
 		auto res = db->executeQuery("SELECT * FROM order_items\nWHERE order_id = "
@@ -217,7 +79,7 @@ private:
 		);
 
 		for (const auto& row : res) {
-			auto product = ProductRepository::load(db, row["product_id"].as<int>());
+			auto product = ProductService::load(db, row["product_id"].as<int>());
 
 			order.addItem(product, row["quantity"].as<int>());
 		}
@@ -269,6 +131,13 @@ public:
 	virtual ~User() = default;
 
 	virtual void updateOrderStatus(unique_ptr<DatabaseConnection<string>>& db, int id, const string& status) = 0;
+
+	bool canChangeStatus(const string& role) {
+		auto canChangeStatus = [](const string& role) {
+			return role == "admin" || role == "manager";
+		};
+		return canChangeStatus(role);
+	}
 
 	int createOrder(unique_ptr<DatabaseConnection<string>>& db, vector<pair<shared_ptr<Product>, int>>& list) {
 		pqxx::work txn(db->getConnection());
@@ -327,18 +196,34 @@ public:
 		return filtheredOrderArray;
 	}
 
-	int totalAmountByStatus(const string& status) {
-		int amount = accumulate(orders.begin(), orders.end(), 0,
-				[&status](int count, shared_ptr<Order>& order) {return count + (order->getStatus() == status || status == "ALL");});
+	double totalAmount(const string& status) {
+		double amount = accumulate(orders.begin(), orders.end(), 0.0,
+				[&status](double count, shared_ptr<Order>& order)
+				{if (order->getStatus() == "completed") return count + order->getTotal_order();});
 		return amount;
 	}
 
-	bool canReturn(unique_ptr<DatabaseConnection<string>>& db, int id) {
+	int numbertByStatus(const string& status) {
+		int number = accumulate(orders.begin(), orders.end(), 0,
+				[&status](int count, shared_ptr<Order>& order) {return count + (order->getStatus() == status || status == "ALL");});
+		return number;
+	}
+
+	double returnOrder(unique_ptr<DatabaseConnection<string>>& db, int id) {
 		string query = "CALL canReturnOrder(" + to_string(id) + ")";
 
 		pqxx::result res = db->executeQuery(query);
 
-		return res[0]["canReturnOrder"].as<bool>();
+		bool f = res[0]["canReturnOrder"].as<bool>();
+
+		if(!f) {
+			throw runtime_error("Возврат невозможе");
+		}
+		query = "CALL update_Order_status(" + to_string(getUserId()) + ", " + to_string(id) + ", 'returned')\nRETURNING total_price";
+
+		res = db->executeQuery(query);
+
+		return res[0]["total_price"].as<double>();
 	}
 
 	int getUserId() {
@@ -348,6 +233,8 @@ public:
 	vector<shared_ptr<Order>> getOrderArray() {
 		return orders;
 	}
+
+	virtual pqxx::result getOrderStatusHistory(unique_ptr<DatabaseConnection<string>>& db, int oi) = 0;
 };
 
 class Admin : public User {
@@ -392,9 +279,57 @@ public:
 		string query = "CALL update_Order_status(" + to_string(getUserId()) + ", "
 				+ to_string(id) + ", " + db->getConnection().quote(status) + ");";
 
+		for(auto order : getOrderArray()) {
+			if (order->getId() == id) {
+				order->setStatus(status);
+			}
+		}
+
 		db->executeNonQuery(query);
 
 		cout << "Статус заказа обновлён";
+	}
+
+	pqxx::result getOrderStatusHistory(unique_ptr<DatabaseConnection<string>>& db, int oi) override {
+		string query = "CALL getOrderStatusHistory(" + to_string(oi) + ");";
+
+		return db->executeQuery(query);
+	}
+
+	pqxx::result getUserActions(unique_ptr<DatabaseConnection<string>>& db, int ui) {
+		string query = "CALL getAuditLogByUser(" + to_string(ui) + ");";
+
+		return db->executeQuery(query);
+	}
+
+	void createCSVReport(unique_ptr<DatabaseConnection<string>>& db, const string& FileName) {
+		ofstream file(FileName);
+		if(!file.is_open()) {
+			cerr << "Ошибка! Не удалось открыть файл для чтения" << endl;
+		}
+
+		pqxx::result res = db->executeQuery("SELECT * FROM createOrderAuditHistory();");
+
+		file << "[\n";
+
+		for (size_t i = 0; i < res.size(); i++) {
+			file << "{\n";
+			file << " \"order_id\":" << res[0]["order_id"].as<int>() << ",\n";
+			file << " \"current_status\": \"" << res[0]["current_status"].c_str() << "\",\n";
+			file << " \"order_date\": \"" << res[0]["order_date"].c_str() << "\",\n";
+			file << " \"number_of_status_changes\": \"" << res[0]["number_of_status_changes"].as<int>() << "\",\n";
+			file << " \"last_action\": \"" << res[0]["last_action"].c_str() << "\",\n";
+			file << " \"action_date\": \"" << res[0]["action_date"].c_str() << "\",\n";
+			file << " \"number_of_audit_actions\": " << res[0]["number_of_audit_actions"].as<int>() << ",\n";
+			if (i + 1 < res.size()) {
+				file << ",";
+			}
+			file << "}";
+		}
+		file << "]\n";
+		file.close();
+
+		cout << "Отчёт успешно создан:" << FileName << endl;
 	}
 };
 
@@ -402,9 +337,16 @@ class Manager : public User {
 public:
 	void updateOrderStatus(unique_ptr<DatabaseConnection<string>>& db, int id, const string& s = "completed") override {
 		string query = "CALL update_Order_status(" + to_string(getUserId()) + ", "
-				+ to_string(id) + db->getConnection().quote(s) + ");";
+				+ to_string(id) + ", "
+				+ db->getConnection().quote(s) + ");";
 
 		db->executeNonQuery(query);
+
+		for(auto order : getOrderArray()) {
+			if (order->getId() == id) {
+				order->setStatus("completed");
+			}
+		}
 
 		cout << "Заказ утверждён";
 	}
@@ -418,12 +360,26 @@ public:
 
 		cout << "Информация о товаре с ID = " << id << " обновлена" << endl;
 	}
+
+	pqxx::result getOrderStatusHistory(unique_ptr<DatabaseConnection<string>>& db, int oi) override {
+		string query = "SELECT * FROM order_status_history\nWHERE user_id = "
+				+ to_string(getUserId()) + " AND order_id = "
+				+ to_string(oi) + ";";
+
+		return db->executeQuery(query);
+	}
+
+	pqxx::result getOrderActions(unique_ptr<DatabaseConnection<string>>& db, int ui) {
+		string query = "SELECT * FROM audit_log\nWHERE entity_type = 'order';";
+
+		return db->executeQuery(query);
+	}
 };
 
 class Customer : public User {
 public:
 	void addToOrder(unique_ptr<DatabaseConnection<string>>& db, int order_id, int product_id, int quantity) {
-		auto res = db->executeQuery("SELECT * FROM product\nWHERE product_id = " + to_string(product_id) + ";")[0];
+		auto res = db->executeQuery("SELECT * FROM products\nWHERE product_id = " + to_string(product_id) + ";")[0];
 
 		auto product = make_shared<Product>(res["product_id"].as<int>(), res["name"].c_str(),
 				res["price"].as<double>(), res["stock_quantity"].as<int>());
@@ -463,28 +419,25 @@ public:
 		cout << "Товар удалён из заказа";
 	}
 
-	void makePayment(unique_ptr<DatabaseConnection<string>>& db, unique_ptr<PaymentStrategy>& p, double amount) {
-		p->pay(amount);
+	void makePayment(unique_ptr<DatabaseConnection<string>>& db, PaymentStrategy& p, double amount) {
+		p.pay(amount);
+	}
+
+	pqxx::result getOrderStatusHistory(unique_ptr<DatabaseConnection<string>>& db, int oi) override {
+		string query = "SELECT * FROM order_status_history\nWHERE user_id = "
+				+ to_string(getUserId()) + " AND order_id = "
+				+ to_string(oi) + ";";
+
+		return db->executeQuery(query);
 	}
 
 	void updateOrderStatus(unique_ptr<DatabaseConnection<string>>& db, int id, const string& status) override {
-			throw runtime_error("Покупатель не может менять статус заказа");
+			cout << "Покупатель не может менять статус заказа";
 	}
 
 };
 
 int main() {
-
-	auto db = make_unique<DatabaseConnection<string>>(
-			"host=localhost port=5432 dbname=online_store_db user=postgres password=Qwerty1234"
-			);
-
-	if (db->isConnected()) {
-		cout << "Connected to database: " << db->getConnection().dbname() << endl;
-	} else {
-		cerr << "Failed to connect to the database." << endl;
-		return 1;
-	}
 
 	return 0;
 }
