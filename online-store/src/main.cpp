@@ -45,18 +45,18 @@ int main() {
 		}
 		case 2: {
 			cout << "Теперь вы менеджер";
-			unique_ptr<User> admin = make_unique<Manager>(db, 3, "Олег Кузнецов", "oleg.k@mail.com", 0);
+			unique_ptr<User> manager = make_unique<Manager>(db, 3, "Олег Кузнецов", "oleg.k@mail.com", 0);
 
-			dynamic_cast<Manager*>(admin.get())->runManagerMenu(db);
+			dynamic_cast<Manager*>(manager.get())->runManagerMenu(db);
 
 			break;
 		}
 		case 3 : {
 			cout << "Теперь вы покупатель";
 
-			unique_ptr<User> admin = make_unique<Customer>(db, 1, "Иван Петров", "ivan.petrov@mail.com", 0);
+			unique_ptr<User> customer = make_unique<Customer>(db, 1, "Иван Петров", "ivan.petrov@mail.com", 0);
 
-			dynamic_cast<Customer*>(admin.get())->runCustomerMenu(db);
+			dynamic_cast<Customer*>(customer.get())->runCustomerMenu(db);
 
 			break;
 		}
