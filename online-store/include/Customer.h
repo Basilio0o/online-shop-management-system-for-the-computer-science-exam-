@@ -30,4 +30,6 @@ public:
 	pqxx::result viewOrderDetails(unique_ptr<DatabaseConnection<string>>& db, int id) override;
 
 	void runCustomerMenu(unique_ptr<DatabaseConnection<string>>& db);
+
+	unique_ptr<PaymentStrategy> choosePaymentMethod();
 };

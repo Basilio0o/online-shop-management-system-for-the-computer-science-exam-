@@ -50,8 +50,7 @@ void Customer::makePayment(unique_ptr<DatabaseConnection<string>>& db, PaymentSt
 }
 
 pqxx::result Customer::getOrderStatusHistory(unique_ptr<DatabaseConnection<string>>& db, int oi) {
-	string query = "SELECT * FROM order_status_history\nWHERE user_id = "
-			+ to_string(getUserId()) + " AND order_id = "
+	string query = "SELECT old_status, new_status, changed_at FROM order_status_history\nWHERE order_id = "
 			+ to_string(oi) + ";";
 
 	return db->executeQuery(query);
@@ -62,37 +61,137 @@ void Customer::updateOrderStatus(unique_ptr<DatabaseConnection<string>>& db, int
 }
 
 pqxx::result Customer::viewOrderDetails(unique_ptr<DatabaseConnection<string>>& db, int id) {
-	return db->executeQuery("SELECT otal_price, status, order_date FROM orders\nWHERE order_id = "
+	return db->executeQuery("SELECT total_price, status, order_date FROM orders\nWHERE order_id = "
 			+ to_string(id) + " AND user_id = " + to_string(getUserId()) + ";");
+}
+
+unique_ptr<PaymentStrategy> Customer::choosePaymentMethod() {
+	int ch;
+	unique_ptr<PaymentStrategy> paymentStrategy = nullptr;
+
+	do {
+		cout << "\n\n=== МЕНЮ ОПЛАТЫ === " << endl;
+		cout << "1. Оплата банковской картой\n" << endl;
+		cout << "2. Оплата электронным кошельком\n" << endl;
+		cout << "3. Оплата через СБП" << endl;
+		cout << "0. Отмена" << endl;
+		cout << "Ваш выбор: ";
+		cin >> ch;
+		cin.ignore(numeric_limits<streamsize>::max(), '\n');
+
+		cout << endl;
+
+		switch (ch) {
+			case 1: {
+				string cn, ch;
+				cout << "Введите номер вашей карты: ";
+				cin >> cn;
+				cin.ignore();
+				cout << "Введите вашу фамилию и имя: ";
+				getline(cin, ch);
+				paymentStrategy = make_unique<CardPayment>(cn, ch);
+				break;
+			}
+			case 2: {
+				string id;
+				cout << "ID вашего кошелька: ";
+				cin >> id;
+				paymentStrategy = make_unique<WalletPayment>(id);
+				break;
+			}
+			case 3: {
+				string pn;
+				cout << "Введите номер вашего телефона: ";
+				cin >> pn;
+				paymentStrategy = make_unique<SBPPayment>(pn);
+				break;
+			}
+			case 0:
+				cout << "Отмена выбора оплаты." << endl;
+				break;
+			default:
+				cout << "Неверный выбор. Попробуйте снова." << endl;
+		}
+	} while (ch != 0 && paymentStrategy == nullptr);
+
+	return paymentStrategy;
 }
 
 void Customer::runCustomerMenu(unique_ptr<DatabaseConnection<string>>& db) {
     int choice;
 
     do {
-        cout << "\n=== МЕНЮ ПОКУПАТЕЛЯ ===\n";
-        cout << "1. Создать новый заказ\n";
-        cout << "2. Добавить товар в заказ\n";
-        cout << "3. Удалить товар из заказа\n";
-        cout << "4. Просмотр моих заказов\n";
-        cout << "5. Просмотр статуса заказа\n";
-        cout << "6. Оплатить заказ\n";
-        cout << "7. Оформить возврат заказа\n";
-        cout << "8. Просмотр истории статусов заказа\n";
-        cout << "9. Выход\n";
+        cout << "\n\n=== МЕНЮ ПОКУПАТЕЛЯ ===" << endl;
+        cout << "1. Создать новый заказ" << endl;
+        cout << "2. Добавить товар в заказ" << endl;
+        cout << "3. Удалить товар из заказа" << endl;
+        cout << "4. Просмотр моих заказов" << endl;
+        cout << "5. Просмотр статуса заказа" << endl;
+        cout << "6. Оплатить заказ" << endl;
+        cout << "7. Оформить возврат заказа" << endl;
+        cout << "8. Просмотр истории статусов заказа" << endl;;
+        cout << "0. Выход" << endl;;
         cout << "Ваш выбор: ";
 
         cin >> choice;
-        cin.ignore(numeric_limits<streamsize>::max(), '\n'); // очищаем буфер
+        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+
+        cout << endl;
 
         switch (choice) {
             case 1: {
-                vector<pair<shared_ptr<Product>, int>> items;
-                int orderId = createOrder(db, items); // создаём пустой заказ
-                cout << "Создан новый заказ с ID: " << orderId << endl;
+				pqxx::result res = db->executeQuery("SELECT * FROM products\nORDER BY product_id;");
+
+				cout << "[ID][Навание][Стоимость][Кол-во на складе]" << endl;
+
+				for (auto row : res) {
+					cout << row["product_id"].as<int>() << ", "
+							<< row["name"].c_str() << ", "
+							<< row["price"].as<double>() << ", "
+							<< row["stock_quantity"].as<int>() << endl;
+				}
+
+				string name = "name";
+				int q;
+				vector<pair<shared_ptr<Product>, int>> items;
+
+				cout << "Вводите название товара и его количество (Чтобы закончить, нажмиже Enter на названии)" << endl;
+				cout << "Название: ";
+				while (getline(cin, name) && !name.empty()) {
+					cout << "Количество: ";
+					cin >> q;
+					cin.ignore(numeric_limits<streamsize>::max(), '\n');
+					for (auto row : res) {
+						if (string(row["name"].c_str()) == name && row["stock_quantity"].as<int>() >= q) {
+							shared_ptr<Product> pr = make_shared<Product>(row["product_id"].as<int>(), name,
+									row["price"].as<double>(), row["stock_quantity"].as<int>());
+							items.emplace_back(pr, q);
+							cout << endl;
+							break;
+						} else {
+							cout << "Проверьте корректность данных" << endl;
+						}
+					}
+					cout << "Название: ";
+				}
+
+            	if(items.empty()) {
+            		cout << "Ни один товар не добавлен. Заказ не создан" << endl;
+            	}
                 break;
             }
             case 2: {
+            	pqxx::result res = db->executeQuery("SELECT * FROM products\nORDER BY product_id;");
+
+				cout << "[ID][Навание][Стоимость][Кол-во на складе]" << endl;
+
+				for (auto row : res) {
+					cout << row["product_id"].as<int>() << ", "
+							<< row["name"].c_str() << ", "
+							<< row["price"].as<double>() << ", "
+							<< row["stock_quantity"].as<int>() << endl;
+				}
+
                 int orderId, productId, quantity;
                 cout << "ID заказа: ";
                 cin >> orderId;
@@ -106,9 +205,23 @@ void Customer::runCustomerMenu(unique_ptr<DatabaseConnection<string>>& db) {
             }
             case 3: {
                 int orderId, productId;
-                cout << "ID заказа: ";
+                cout << "ID ваших заказов:" << endl;
+                for(auto order : getOrderArray()) {
+                	cout << order->getId() << " ";
+                }
+                cout << "\nID заказа: ";
                 cin >> orderId;
-                cout << "ID продукта для удаления: ";
+                cout << "Содержимое заказа:" << endl;
+                for(auto order : getOrderArray()) {
+                	if(order->getId() == orderId) {
+            			cout << "[ID товара][Кол-во товара]" << endl;
+                		for(auto item : order->getItems()) {
+                			cout << item.getProductId() << ", " << item.getQuantity() << endl;
+                		}
+                		break;
+                	}
+                }
+                cout << "\nID продукта для удаления: ";
                 cin >> productId;
                 cin.ignore();
                 removeFromOrder(db, orderId, productId);
@@ -116,11 +229,10 @@ void Customer::runCustomerMenu(unique_ptr<DatabaseConnection<string>>& db) {
             }
             case 4: {
                 auto orders = getOrderArray();
-                cout << "Мои заказы:\n";
+                cout << "Мои заказы:" << endl;
+                cout << "[ID][Статус][Сумма]" << endl;
                 for (auto o : orders) {
-                    cout << "ID: " << o->getId()
-                         << ", Статус: " << o->getStatus()
-                         << ", Сумма: " << o->getTotal_order() << "\n";
+                    cout << o->getId() << ", " << o->getStatus() << ", " << o->getTotal_order() << endl;
                 }
                 break;
             }
@@ -139,6 +251,7 @@ void Customer::runCustomerMenu(unique_ptr<DatabaseConnection<string>>& db) {
                 cin >> orderId;
                 cin.ignore();
 
+
                 double amount = 0.0;
                 for (auto o : getOrderArray()) {
                     if (o->getId() == orderId) {
@@ -147,12 +260,12 @@ void Customer::runCustomerMenu(unique_ptr<DatabaseConnection<string>>& db) {
                     }
                 }
 
-
                 if (amount > 0.0) {
-                    makePayment(db, paymentStrategy, amount);
+                	auto paymentStrategy = choosePaymentMethod();
+                    makePayment(db, *paymentStrategy, amount);
                     cout << "Заказ оплачен на сумму: " << amount << endl;
                 } else {
-                    cout << "Заказ не найден или пуст.\n";
+                    cout << "Заказ не найден или пуст." << endl;
                 }
                 break;
             }
@@ -175,20 +288,28 @@ void Customer::runCustomerMenu(unique_ptr<DatabaseConnection<string>>& db) {
                 cin >> orderId;
                 cin.ignore();
                 auto res = getOrderStatusHistory(db, orderId);
-                cout << "История статусов:\n";
+                cout << "История статусов:" << endl;
+                cout << "[Старый статус][Новый статус][Дата]" << endl;
                 for (auto row : res) {
-                    for (auto field : row) cout << field.c_str() << " ";
-                    cout << "\n";
+                    for (auto field : row) {
+                    	if(string(field.c_str()).empty()) {
+                    		cout << "NULL ";
+                    	} else {
+                        	cout << field.c_str() << " ";
+                    	}
+                    }
+                    cout << endl;
                 }
                 break;
             }
-            case 9:
-                cout << "Выход из меню покупателя.\n";
+            case 0:
+                cout << "Выход из меню покупателя." << endl;
                 break;
             default:
-                cout << "Неверный выбор. Попробуйте снова.\n";
+                cout << "Неверный выбор. Попробуйте снова." << endl;
         }
-
-    } while (choice != 9);
+    } while (choice != 0);
 }
+
+
 

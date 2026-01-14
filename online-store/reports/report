@@ -49,27 +49,27 @@
  "current_status": "pending",
  "order_date": "2026-01-09 21:43:11.805232",
  "number_of_status_changes": 1,
- "last_action": "insert",
- "action_date": "2026-01-09 21:43:11.805232",
- "number_of_audit_actions": 1
+ "last_action": "update",
+ "action_date": "2026-01-14 06:05:32.881551",
+ "number_of_audit_actions": 2
 },
 {
  "order_id":21,
- "current_status": "pending",
- "order_date": "2026-01-09 21:59:25.792944",
- "number_of_status_changes": 1,
+ "current_status": "completed",
+ "order_date": "2026-01-14 04:22:47.675957",
+ "number_of_status_changes": 2,
  "last_action": "update",
- "action_date": "2026-01-09 21:59:25.792944",
- "number_of_audit_actions": 3
+ "action_date": "2026-01-14 04:22:47.675957",
+ "number_of_audit_actions": 4
 },
 {
  "order_id":24,
- "current_status": "pending",
- "order_date": "2026-01-09 22:06:08.768155",
- "number_of_status_changes": 1,
- "last_action": "insert",
- "action_date": "2026-01-09 22:06:08.768155",
- "number_of_audit_actions": 2
+ "current_status": "returned",
+ "order_date": "2026-01-14 06:13:35.179881",
+ "number_of_status_changes": 3,
+ "last_action": "update",
+ "action_date": "2026-01-14 06:13:35.179881",
+ "number_of_audit_actions": 4
 },
 {
  "order_id":25,
@@ -87,6 +87,15 @@
  "number_of_status_changes": 2,
  "last_action": "update",
  "action_date": "2026-01-09 22:52:51.499948",
+ "number_of_audit_actions": 3
+},
+{
+ "order_id":27,
+ "current_status": "pending",
+ "order_date": "2026-01-14 05:49:42.366243",
+ "number_of_status_changes": 1,
+ "last_action": "update",
+ "action_date": "2026-01-14 05:50:38.869197",
  "number_of_audit_actions": 3
 }
 ]

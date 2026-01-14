@@ -123,16 +123,20 @@ int User::numbertByStatus(const string& status) {
 }
 
 double User::returnOrder(unique_ptr<DatabaseConnection<string>>& db, int id) {
-	string query = "CALL canReturnOrder(" + to_string(id) + ")";
+	string query = "SELECT * FROM canReturnOrder(" + to_string(id) + ")";
 
 	pqxx::result res = db->executeQuery(query);
 
 	bool f = res[0]["canReturnOrder"].as<bool>();
 
 	if(!f) {
-		throw runtime_error("Возврат невозможе");
+		throw runtime_error("Возврат невозможен");
 	}
-	query = "CALL update_Order_status(" + to_string(getUserId()) + ", " + to_string(id) + ", 'returned')\nRETURNING total_price";
+	query = "CALL update_Order_status(" + to_string(getUserId()) + ", " + to_string(id) + ", 'returned')";
+
+	res = db->executeQuery(query);
+
+	query = "SELECT total_price FROM orders\nWHERE order_id = " + to_string(id) + ";";
 
 	res = db->executeQuery(query);
 

@@ -49,6 +49,10 @@ void OrderService::loadItems(unique_ptr<DatabaseConnection<string>>& db, Order& 
 	}
 }
 
+vector<OrderItem> Order::getItems(){
+	return items;
+}
+
 vector<shared_ptr<Order>> OrderService::loadUserOrders(unique_ptr<DatabaseConnection<string>>& db, int user_id){
 	vector<shared_ptr<Order>> orders;
 

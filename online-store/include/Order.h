@@ -28,6 +28,8 @@ public:
 
 	int getId();
 
+	vector<OrderItem> getItems();
+
 	void setPayment(unique_ptr<PaymentStrategy> p);
 
 	double getTotal_order();
