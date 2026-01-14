@@ -11,16 +11,16 @@ LANGUAGE plpgsql
 AS $$
 BEGIN
 	PERFORM 1
-	FROM orders
-	WHERE order_id = oi;
+	FROM orders o
+	WHERE o.order_id = oi;
 
 	IF NOT FOUND THEN
 		RAISE EXCEPTION 'Заказ с id % не найден', oi;
 	END IF;
 		
 	RETURN QUERY
-	SELECT * FROM order_status_history
-	WHERE order_id = oi
+	SELECT * FROM order_status_history oh
+	WHERE oh.order_id = oi
 	ORDER BY changed_at ASC;
 END;
 $$;
@@ -35,8 +35,8 @@ BEGIN
 	
 	SELECT status
 	INTO s
-	FROM orders
-	WHERE order_id = oi;
+	FROM orders o
+	WHERE o.order_id = oi;
 
 	IF NOT FOUND THEN
 		RAISE EXCEPTION 'Заказ с id % не найден', oi;
@@ -56,8 +56,8 @@ LANGUAGE plpgsql
 AS $$
 BEGIN
 	PERFORM 1
-	FROM users
-	WHERE user_id = ui;
+	FROM users u
+	WHERE u.user_id = ui;
   
 	IF NOT FOUND THEN
 		RAISE EXCEPTION 'Пользователь с id % не найден', ui;
@@ -67,8 +67,8 @@ BEGIN
 	SELECT 
 		status,
 		COUNT(user_id) AS count
-	FROM orders
-	WHERE user_id = ui
+	FROM orders o
+	WHERE o.user_id = ui
 	GROUP BY (status)
 	ORDER BY status ASC;
 END;
@@ -83,8 +83,8 @@ DECLARE
 BEGIN
 
 	PERFORM 1
-	FROM users
-	WHERE user_id = ui;
+	FROM users u
+	WHERE u.user_id = ui;
   
 	IF NOT FOUND THEN
 		RAISE EXCEPTION 'Пользователь с id % не найден', ui;
@@ -93,8 +93,8 @@ BEGIN
 	SELECT 
 		COALESCE(SUM(total_price), 0)
 	INTO t
-	FROM orders
-	WHERE user_id = ui AND status = 'completed';
+	FROM orders o
+	WHERE o.user_id = ui AND o.status = 'completed';
 
 	RETURN t;
 END;
@@ -112,8 +112,8 @@ BEGIN
 		status,
 		order_date
 	INTO s, d
-	FROM orders
-	WHERE order_id = oi;
+	FROM orders o
+	WHERE o.order_id = oi;
 
 	IF NOT FOUND THEN
 		RAISE EXCEPTION 'Заказ с id % не найден', oi;
@@ -133,22 +133,23 @@ RETURNS TABLE (
 	entity_type VARCHAR(20),
 	entity_id INT,
 	operation VARCHAR(20),
+	performed_by INT,
 	performed_at TIMESTAMP
 )
 LANGUAGE plpgsql
 AS $$
 BEGIN
 	PERFORM 1
-	FROM users
-	WHERE user_id = ui;
+	FROM users u
+	WHERE u.user_id = ui;
 
 	IF NOT FOUND THEN
 		RAISE EXCEPTION 'Пользователь с id % не найден', ui;
 	END IF;
 
 	RETURN QUERY
-	SELECT * FROM audit_log
-	WHERE user_id = ui
+	SELECT * FROM audit_log a
+	WHERE a.performed_by = ui
 	ORDER BY performed_at ASC;
 END;
 $$;
@@ -172,8 +173,8 @@ BEGIN
 			entity_id,
 			operation,
 			performed_at
-		FROM audit_log 
-		WHERE entity_type = 'order'
+		FROM audit_log a
+		WHERE a.entity_type = 'order'
 		ORDER BY entity_id, performed_at DESC
 	)
 	
@@ -181,15 +182,15 @@ BEGIN
 		o.order_id,
 		o.status AS current_status,
 		o.order_date,
-		COUNT(DISTINCT h.history_id) AS number_of_status_changes,
+		CAST(COUNT(DISTINCT h.history_id) AS INT) AS number_of_status_changes,
 		la.operation,
 		la.performed_at,
-		COUNT(DISTINCT a1.log_id) AS number_of_audit_actions
+		CAST(COUNT(DISTINCT a.log_id) AS INT) AS number_of_audit_actions
 
 	FROM orders o
 	LEFT JOIN order_status_history h ON h.order_id = o.order_id
 	LEFT JOIN last_audit la ON la.entity_id = o.order_id
-	LEFT JOIN audit_log a ON a.order_id = o.order_id AND a.entity_type = 'order'
+	LEFT JOIN audit_log a ON a.entity_id = o.order_id AND a.entity_type = 'order'
 	GROUP BY o.order_id, o.status, o.order_date, la.operation, la.performed_at
 	ORDER BY o.order_id;
 END;

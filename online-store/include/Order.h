@@ -36,6 +36,6 @@ public:
 class OrderService {
 public:
 	static vector<shared_ptr<Order>> loadUserOrders(unique_ptr<DatabaseConnection<string>>& db, int user_id);
-private:
+
 	static void loadItems(unique_ptr<DatabaseConnection<string>>& db, Order& order);
 };

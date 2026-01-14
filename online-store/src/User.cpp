@@ -86,12 +86,27 @@ void User::cancelOrder(unique_ptr<DatabaseConnection<string>>& db, int id) {
 	cout << "Ваш заказ отменён";
 }
 
-vector<shared_ptr<Order>> User::orderFiltherByStatus(const string& status) {
-	vector<shared_ptr<Order>> filtheredOrderArray;
-	copy_if(orders.begin(), orders.end(), back_inserter(filtheredOrderArray),
+vector<shared_ptr<Order>> User::orderFilterByStatus(unique_ptr<DatabaseConnection<string>>& db, const string& status) {
+	pqxx::result res = db->executeQuery("SELECT * FROM orders;");
+
+	orders.clear();
+
+	vector<shared_ptr<Order>> filtedOrderArray;
+
+	for(auto row : res) {
+		string s = row["status"].c_str();
+		if(s == status) {
+			int oi = row["order_id"].as<int>();
+			auto order = make_shared<Order>(oi, s);
+			OrderService::loadItems(db, *order);
+			orders.push_back(order);
+		}
+	}
+
+	copy_if(orders.begin(), orders.end(), back_inserter(filtedOrderArray),
 			[&status](shared_ptr<Order>& order){return order->getStatus() == status;});
 
-	return filtheredOrderArray;
+	return filtedOrderArray;
 }
 
 double User::totalAmount(const string& status) {

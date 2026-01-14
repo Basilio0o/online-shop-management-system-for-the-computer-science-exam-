@@ -1,219 +1,41 @@
-CREATE TYPE order_items_t AS (
-	product_id INT,
-	quantity INT
-);
-
-CREATE OR REPLACE PROCEDURE createOrder (
-	ui INT,
-	items order_items_t[]
+CREATE OR REPLACE FUNCTION createOrderAuditHistory ()
+RETURNS TABLE (
+	order_id INT,
+	current_status VARCHAR(20),
+	order_date TIMESTAMP,
+	number_of_status_changes INT,
+	last_action VARCHAR(20),
+	action_date TIMESTAMP,
+	number_of_audit_actions INT
 )
 LANGUAGE plpgsql
 AS $$
-DECLARE 
-	oi INT;
-	tp DECIMAL(10,2) := 0;
-	item order_items_t;
-	pi INT;
-	q INT;
-	sq INT;
-	p DECIMAL(10,2);
 BEGIN
-	PERFORM 1
-	FROM users
-	WHERE user_id = ui;
-  
-	IF NOT FOUND THEN
-		RAISE EXCEPTION 'Пользователь с id % не найден', ui;
-	END IF;
-
-	INSERT INTO orders (user_id, status, total_price, order_date) 
-	VALUES (ui, 'pending', 0, NOW())
-	RETURNING order_id INTO oi;
-
-	FOREACH item IN ARRAY items LOOP
-		SELECT price, stock_quantity
-		INTO p, sq
-		FROM products 
-		WHERE product_id = item.product_id
-		FOR UPDATE;
+	RETURN QUERY
+	WITH last_audit AS (
+		SELECT DISTINCT ON(entity_id)
+			entity_id,
+			operation,
+			performed_at
+		FROM audit_log a
+		WHERE a.entity_type = 'order'
+		ORDER BY entity_id, performed_at DESC
+	)
 	
-		IF NOT FOUND THEN
-			RAISE EXCEPTION 'Товар с id % не найден', item.product_id;
-		END IF;
-	
-		IF q > sq THEN
-			RAISE EXCEPTION 'Недостаточно товара на складе (product_id = %)', item.product_id;
-		END IF;
-	
-		INSERT INTO order_items (order_id, product_id, quantity, price)
-		VALUES (oi, item.product_id, item.quantity, p);
-	
-		UPDATE products 
-		SET stock_quantity = sq - item.quantity
-		WHERE product_id = item.product_id;
-	
-		tp := tp + (p*item.quantity);
-	
-	END LOOP;
+	SELECT
+		o.order_id,
+		o.status AS current_status,
+		o.order_date,
+		COUNT(DISTINCT h.history_id) AS number_of_status_changes,
+		la.operation,
+		la.performed_at,
+		COUNT(DISTINCT a1.log_id) AS number_of_audit_actions
 
-	UPDATE orders
-	SET total_price = tp
-	WHERE order_id = oi;
-
-	INSERT INTO order_status_history (order_id, old_status, new_status, changed_at, changed_by)
-	VALUES (oi, NULL, 'pending', NOW(), ui);
-
-END;
-$$;
-
-
-CREATE OR REPLACE PROCEDURE update_Order_status (
-	ui INT,
-	oi INT,
-	s VARCHAR(20)
-)
-LANGUAGE plpgsql
-AS $$
-DECLARE 
-	os VARCHAR(20);
-BEGIN
-	PERFORM 1
-	FROM users
-	WHERE user_id = ui;
-  
-	IF NOT FOUND THEN
-		RAISE EXCEPTION 'Пользователь с id % не найден', ui;
-	END IF;
-
-	SELECT status
-	INTO os
-	FROM orders
-	WHERE order_id = oi;
-
-	IF NOT FOUND THEN
-		RAISE EXCEPTION 'Заказ с id % не найден', oi;
-	END IF;
-
-	UPDATE orders
-	SET status = s
-	WHERE order_id = oi;
-
-	INSERT INTO order_status_history (order_id, old_status, new_status, changed_at, changed_by)
-	VALUES (oi, os, s, NOW(), ui);
-
-END;
-$$;
-
-CREATE OR REPLACE PROCEDURE addToOrder (
-	oi INT,
-	pi INT,
-	quantity INT
-)
-LANGUAGE plpgsql
-AS $$
-DECLARE 
-	s VARCHAR(20);
-	p DECIMAL(10,2);
-	tp DECIMAL(10,2);
-	sq INT;
-BEGIN
-	SELECT status, total_price
-	INTO s, tp
-	FROM orders
-	WHERE order_id = oi;
-
-	IF NOT FOUND THEN
-        RAISE EXCEPTION 'Заказ с id % не найден', oi;
-    END IF;
-  
-	IF s != 'pending' THEN
-		RAISE EXCEPTION 'В заказ с id % нельзя добавить товар', oi;
-	END IF;
-	
-	SELECT price, stock_quantity
-	INTO p, sq
-	FROM products 
-	WHERE product_id = pi
-	FOR UPDATE;
-
-	IF NOT FOUND THEN
-		RAISE EXCEPTION 'Товар с id % не найден', pi;
-	END IF;
-
-	IF quantity > sq THEN
-		RAISE EXCEPTION 'Недостаточно товара на складе (product_id = %)', pi;
-	END IF;
-
-	INSERT INTO order_items (order_id, product_id, quantity, price)
-	VALUES (oi, pi, quantity, p);
-
-	UPDATE products 
-	SET stock_quantity = sq - quantity
-	WHERE product_id = pi;
-
-	tp := tp + p * quantity;
-
-	UPDATE orders
-	SET total_price = tp
-	WHERE order_id = oi;
-
-END;
-$$;
-
-CREATE OR REPLACE PROCEDURE deleteFromOrder (
-	oi INT,
-	pi INT
-)
-LANGUAGE plpgsql
-AS $$
-DECLARE 
-	s VARCHAR(20);
-	p DECIMAL(10,2);
-	tp DECIMAL(10,2);
-	q INT;
-	sq INT;
-BEGIN
-	SELECT status, total_price
-	INTO s, tp
-	FROM orders
-	WHERE order_id = oi;
-
-	IF NOT FOUND THEN
-        RAISE EXCEPTION 'Заказ с id % не найден', oi;
-    END IF;
-  
-	IF s != 'pending' THEN
-		RAISE EXCEPTION 'Из заказа с id % нельзя убрать товар', oi;
-	END IF;
-	
-	SELECT stock_quantity
-	INTO sq
-	FROM products 
-	WHERE product_id = pi
-	FOR UPDATE;
-
-	IF NOT FOUND THEN
-		RAISE EXCEPTION 'Товар с id % не найден', pi;
-	END IF;
-
-	DELETE FROM order_items
-    WHERE order_id = oi AND product_id = pi
-    RETURNING quantity, price 
-	INTO q, p;
-
-    IF NOT FOUND THEN
-        RAISE EXCEPTION 'Товар с id % не найден в заказе %', pi, oi;
-    END IF;
-
-	UPDATE products 
-	SET stock_quantity = sq + q
-	WHERE product_id = pi;
-
-	tp := tp - p * q;
-
-	UPDATE orders
-	SET total_price = GREATEST(tp, 0)
-	WHERE order_id = oi;
-
+	FROM orders o
+	LEFT JOIN order_status_history h ON h.order_id = o.order_id
+	LEFT JOIN last_audit la ON la.entity_id = o.order_id
+	LEFT JOIN audit_log a ON a.order_id = o.order_id AND a.entity_type = 'order'
+	GROUP BY o.order_id, o.status, o.order_date, la.operation, la.performed_at
+	ORDER BY o.order_id;
 END;
 $$;

@@ -23,7 +23,7 @@
 -- 	order_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 -- );
 
-CREATE TABLE order_items (
+CREATE TABLE 	
 	order_item_id SERIAL PRIMARY KEY,
 	order_id INT,
 	FOREIGN KEY (order_id) REFERENCES orders(order_id),

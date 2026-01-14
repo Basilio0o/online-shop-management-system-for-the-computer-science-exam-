@@ -2,6 +2,7 @@
 #include "../include/User.h"
 #include "../include/DatabaseConnection.h"
 #include "../include/OrderItem.h"
+#include "../include/PaymentStrategy.h"
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -9,10 +10,13 @@
 #include <memory>
 #include <algorithm>
 
+
 using namespace std;
 
 class Customer : public User {
 public:
+	Customer(unique_ptr<DatabaseConnection<string>>& db, int id, const string& n, const string& e, int l);
+
 	void addToOrder(unique_ptr<DatabaseConnection<string>>& db, int order_id, int product_id, int quantity);
 
 	void removeFromOrder(unique_ptr<DatabaseConnection<string>>& db, int order_id, int product_id);
@@ -22,4 +26,8 @@ public:
 	pqxx::result getOrderStatusHistory(unique_ptr<DatabaseConnection<string>>& db, int oi) override;
 
 	void updateOrderStatus(unique_ptr<DatabaseConnection<string>>& db, int id, const string& status) override;
+
+	pqxx::result viewOrderDetails(unique_ptr<DatabaseConnection<string>>& db, int id) override;
+
+	void runCustomerMenu(unique_ptr<DatabaseConnection<string>>& db);
 };

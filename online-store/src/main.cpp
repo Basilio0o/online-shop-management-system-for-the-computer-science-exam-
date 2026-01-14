@@ -31,14 +31,11 @@ int main() {
 	unique_ptr<DatabaseConnection<string>> db =
 			make_unique<DatabaseConnection<string>>("host=localhost port=5432 dbname=online_store_db user=postgres password=Qwerty1234");
 
-	char choice;
+	int choice;
 
 	Menu();
 
 	cin >> choice;
-
-	cin.clear();
-	cin.ignore();
 
 	switch(choice) {
 		case 1 : {
@@ -51,10 +48,19 @@ int main() {
 		}
 		case 2: {
 			cout << "Теперь вы менеджер";
+			unique_ptr<User> admin = make_unique<Manager>(db, 3, "Олег Кузнецов", "oleg.k@mail.com", 0);
+
+			dynamic_cast<Manager*>(admin.get())->runManagerMenu(db);
+
 			break;
 		}
 		case 3 : {
 			cout << "Теперь вы покупатель";
+
+			unique_ptr<User> admin = make_unique<Customer>(db, 1, "Иван Петров", "ivan.petrov@mail.com", 0);
+
+			dynamic_cast<Customer*>(admin.get())->runCustomerMenu(db);
+
 			break;
 		}
 		case 0 : {

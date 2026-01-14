@@ -36,7 +36,7 @@ public:
 
 	void cancelOrder(unique_ptr<DatabaseConnection<string>>& db, int id);
 
-	vector<shared_ptr<Order>> orderFiltherByStatus(const string& status);
+	vector<shared_ptr<Order>> orderFilterByStatus(unique_ptr<DatabaseConnection<string>>& db, const string& status);
 
 	double totalAmount(const string& status);
 
@@ -49,4 +49,6 @@ public:
 	vector<shared_ptr<Order>> getOrderArray();
 
 	virtual pqxx::result getOrderStatusHistory(unique_ptr<DatabaseConnection<string>>& db, int oi) = 0;
+
+	virtual pqxx::result viewOrderDetails(unique_ptr<DatabaseConnection<string>>& db, int id) = 0;
 };
