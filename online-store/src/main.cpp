@@ -28,8 +28,13 @@ void Menu() {
 }
 
 int main() {
-	unique_ptr<DatabaseConnection<string>> db =
-			make_unique<DatabaseConnection<string>>("host=localhost port=5432 dbname=online_store_db user=postgres password=Qwerty1234");
+	string login = "postgres";
+	cout << "Введите пароль: ";
+	string password;
+	cin >> password;
+	string connection = "host=localhost port=5432 dbname=online_store_db user= " + login + " password=" + password;
+
+	unique_ptr<DatabaseConnection<string>> db = make_unique<DatabaseConnection<string>>(connection);
 
 	int choice;
 

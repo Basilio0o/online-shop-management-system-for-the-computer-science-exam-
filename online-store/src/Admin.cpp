@@ -236,11 +236,17 @@ void Admin::runAdminMenu(unique_ptr<DatabaseConnection<string>>& db) {
 				cout << "ID заказа для просмотра истории: ";
 				cin >> orderId;
 				auto res = getOrderStatusHistory(db, orderId);
-				cout << "[ID][ID заказа][Статус][Дата][ID пользователя]" << endl;
+				cout << "[ID][ID заказа][Старый статус][Новый статус][Дата][ID пользователя]" << endl;
 				cout << "История заказа:" << endl;
 				for (auto row : res) {
-					for (auto field : row) cout << field.c_str() << " ";
-					cout << "\n";
+					for (auto field : row) {
+						if(string(field.c_str()).empty()) {
+							cout << "NULL ";
+						} else {
+							cout << field.c_str() << " ";
+						}
+					}
+					cout << endl;
 				}
 				break;
 			}
