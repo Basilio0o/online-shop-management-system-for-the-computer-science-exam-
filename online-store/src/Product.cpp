@@ -1,4 +1,5 @@
 #include "../include/Product.h"
+using namespace std;
 
 Product::Product(int id, const string& n, double p, int sq) : product_id(id), name(n), price(p), stock_quantity(sq) {}
 

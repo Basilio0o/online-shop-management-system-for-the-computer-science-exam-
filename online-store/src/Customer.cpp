@@ -1,4 +1,5 @@
 #include "../include/Customer.h"
+using namespace std;
 
 Customer::Customer(unique_ptr<DatabaseConnection<string>>& db, int id, const string& n, const string& e, int l) :
 	User(db, id, n, e, "customer", l) {}
@@ -45,7 +46,7 @@ void Customer::removeFromOrder(unique_ptr<DatabaseConnection<string>>& db, int o
 	cout << "Товар удалён из заказа";
 }
 
-void Customer::makePayment(unique_ptr<DatabaseConnection<string>>& db, PaymentStrategy& p, double amount) {
+void Customer::makePayment(unique_ptr<DatabaseConnection<string>>& db, Payment& p, double amount) {
 	p.pay(amount);
 }
 
@@ -65,14 +66,14 @@ pqxx::result Customer::viewOrderDetails(unique_ptr<DatabaseConnection<string>>& 
 			+ to_string(id) + " AND user_id = " + to_string(getUserId()) + ";");
 }
 
-unique_ptr<PaymentStrategy> Customer::choosePaymentMethod() {
+unique_ptr<Payment> Customer::choosePaymentMethod() {
 	int ch;
-	unique_ptr<PaymentStrategy> paymentStrategy = nullptr;
+	unique_ptr<Payment> paymentStrategy = nullptr;
 
 	do {
 		cout << "\n\n=== МЕНЮ ОПЛАТЫ === " << endl;
-		cout << "1. Оплата банковской картой\n" << endl;
-		cout << "2. Оплата электронным кошельком\n" << endl;
+		cout << "1. Оплата банковской картой" << endl;
+		cout << "2. Оплата электронным кошельком" << endl;
 		cout << "3. Оплата через СБП" << endl;
 		cout << "0. Отмена" << endl;
 		cout << "Ваш выбор: ";
@@ -130,7 +131,7 @@ void Customer::runCustomerMenu(unique_ptr<DatabaseConnection<string>>& db) {
         cout << "6. Оплатить заказ" << endl;
         cout << "7. Оформить возврат заказа" << endl;
         cout << "8. Просмотр истории статусов заказа" << endl;;
-        cout << "0. Выход" << endl;;
+        cout << "0. Выход" << endl;
         cout << "Ваш выбор: ";
 
         cin >> choice;
@@ -161,16 +162,16 @@ void Customer::runCustomerMenu(unique_ptr<DatabaseConnection<string>>& db) {
 					cout << "Количество: ";
 					cin >> q;
 					cin.ignore(numeric_limits<streamsize>::max(), '\n');
-					for (auto row : res) {
-						if (string(row["name"].c_str()) == name && row["stock_quantity"].as<int>() >= q) {
-							shared_ptr<Product> pr = make_shared<Product>(row["product_id"].as<int>(), name,
-									row["price"].as<double>(), row["stock_quantity"].as<int>());
-							items.emplace_back(pr, q);
-							cout << endl;
-							break;
-						} else {
-							cout << "Проверьте корректность данных" << endl;
-						}
+					auto row = find_if(res.begin(), res.end(), [name, q](const auto& r) {
+						return r["name"].template as<string>() == name && r["stock_quantity"].template as<int>() >= q;
+					});
+					shared_ptr<Product> pr = make_shared<Product>(row["product_id"].as<int>(), name,
+							row["price"].as<double>(), row["stock_quantity"].as<int>());
+					items.emplace_back(pr, q);
+					cout << endl;
+					break;
+					if(row.empty()) {
+ 							cout << "Проверьте корректность данных" << endl;
 					}
 					cout << "Название: ";
 				}
@@ -212,15 +213,21 @@ void Customer::runCustomerMenu(unique_ptr<DatabaseConnection<string>>& db) {
                 cout << "\nID заказа: ";
                 cin >> orderId;
                 cout << "Содержимое заказа:" << endl;
-                for(auto order : getOrderArray()) {
-                	if(order->getId() == orderId) {
-            			cout << "[ID товара][Кол-во товара]" << endl;
-                		for(auto item : order->getItems()) {
-                			cout << item.getProductId() << ", " << item.getQuantity() << endl;
-                		}
-                		break;
-                	}
+
+                auto orders = getOrderArray();
+                auto it = std::find_if(orders.begin(), orders.end(), [orderId](const std::shared_ptr<Order>& order) {
+                    return order->getId() == orderId;
+                });
+
+                if (it != orders.end()) {
+                    cout << "[ID товара][Кол-во товара]" << endl;
+                    for (auto& item : (*it)->getItems()) {
+                        cout << item.getProductId() << ", " << item.getQuantity() << endl;
+                    }
+                } else {
+                    cout << "Заказ с ID " << orderId << " не найден." << endl;
                 }
+
                 cout << "\nID продукта для удаления: ";
                 cin >> productId;
                 cin.ignore();
@@ -253,16 +260,21 @@ void Customer::runCustomerMenu(unique_ptr<DatabaseConnection<string>>& db) {
 
 
                 double amount = 0.0;
-                for (auto o : getOrderArray()) {
-                    if (o->getId() == orderId) {
-                        amount = o->getTotal_order();
-                        break;
-                    }
-                }
+                auto orders = getOrderArray();
+				auto it = std::find_if(orders.begin(), orders.end(), [orderId](const std::shared_ptr<Order>& order) {
+				  return order->getId() == orderId;
+				});
+
+				if (it != orders.end()) {
+					amount = (*it)->getTotal_order();
+				} else {
+					cout << "Заказ с ID: " << orderId << " не найден" << endl;
+					break;
+				}
 
                 if (amount > 0.0) {
-                	auto paymentStrategy = choosePaymentMethod();
-                    makePayment(db, *paymentStrategy, amount);
+                	auto payment = choosePaymentMethod();
+                    makePayment(db, *payment, amount);
                     cout << "Заказ оплачен на сумму: " << amount << endl;
                 } else {
                     cout << "Заказ не найден или пуст." << endl;

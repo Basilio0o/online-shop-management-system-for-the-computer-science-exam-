@@ -1,13 +1,4 @@
-#include <iostream>
-#include <fstream>
-#include <pqxx/pqxx>
-#include <string>
-#include <vector>
-#include <memory>
-#include <algorithm>
-
 #include "../include/DatabaseConnection.h"
-#include "../include/PaymentStrategy.h"
 #include "../include/Product.h"
 #include "../include/OrderItem.h"
 #include "../include/Order.h"
@@ -15,6 +6,7 @@
 #include "../include/Admin.h"
 #include "../include/Manager.h"
 #include "../include/Customer.h"
+#include "../include/Payment.h"
 
 using namespace std;
 

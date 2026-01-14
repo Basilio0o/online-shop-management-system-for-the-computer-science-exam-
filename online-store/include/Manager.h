@@ -2,27 +2,24 @@
 #include "../include/User.h"
 #include "../include/DatabaseConnection.h"
 #include <iostream>
-#include <fstream>
 #include <string>
 #include <vector>
 #include <memory>
 #include <algorithm>
 
-using namespace std;
-
 class Manager : public User {
 public:
-	Manager(unique_ptr<DatabaseConnection<string>>& db, int id, const string& n, const string& e, int l);
+	Manager(std::unique_ptr<DatabaseConnection<std::string>>& db, int id, const std::string& n, const std::string& e, int l);
 
-	void updateOrderStatus(unique_ptr<DatabaseConnection<string>>& db, int id, const string& s) override;
+	void updateOrderStatus(std::unique_ptr<DatabaseConnection<std::string>>& db, int id, const std::string& s) override;
 
-	void updateStock(unique_ptr<DatabaseConnection<string>>& db, int id, int stock_quantity);
+	void updateStock(std::unique_ptr<DatabaseConnection<std::string>>& db, int id, int stock_quantity);
 
-	pqxx::result getOrderStatusHistory(unique_ptr<DatabaseConnection<string>>& db, int oi) override;
+	pqxx::result getOrderStatusHistory(std::unique_ptr<DatabaseConnection<std::string>>& db, int oi) override;
 
-	pqxx::result getOrderActions(unique_ptr<DatabaseConnection<string>>& db, int ui);
+	pqxx::result getOrderActions(std::unique_ptr<DatabaseConnection<std::string>>& db, int ui);
 
-	pqxx::result viewOrderDetails(unique_ptr<DatabaseConnection<string>>& db, int id) override;
+	pqxx::result viewOrderDetails(std::unique_ptr<DatabaseConnection<std::string>>& db, int id) override;
 
-	void runManagerMenu(unique_ptr<DatabaseConnection<string>>& db);
+	void runManagerMenu(std::unique_ptr<DatabaseConnection<std::string>>& db);
 };

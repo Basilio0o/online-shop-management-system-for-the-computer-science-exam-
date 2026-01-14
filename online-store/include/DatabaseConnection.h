@@ -1,5 +1,4 @@
 #pragma once
-
 #include <pqxx/pqxx>
 #include <string>
 using namespace std;

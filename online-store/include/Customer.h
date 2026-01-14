@@ -2,34 +2,30 @@
 #include "../include/User.h"
 #include "../include/DatabaseConnection.h"
 #include "../include/OrderItem.h"
-#include "../include/PaymentStrategy.h"
 #include <iostream>
-#include <fstream>
 #include <string>
 #include <vector>
 #include <memory>
 #include <algorithm>
-
-
-using namespace std;
+#include "Payment.h"
 
 class Customer : public User {
 public:
-	Customer(unique_ptr<DatabaseConnection<string>>& db, int id, const string& n, const string& e, int l);
+	Customer(std::unique_ptr<DatabaseConnection<std::string>>& db, int id, const std::string& n, const string& e, int l);
 
-	void addToOrder(unique_ptr<DatabaseConnection<string>>& db, int order_id, int product_id, int quantity);
+	void addToOrder(std::unique_ptr<DatabaseConnection<std::string>>& db, int order_id, int product_id, int quantity);
 
-	void removeFromOrder(unique_ptr<DatabaseConnection<string>>& db, int order_id, int product_id);
+	void removeFromOrder(std::unique_ptr<DatabaseConnection<std::string>>& db, int order_id, int product_id);
 
-	void makePayment(unique_ptr<DatabaseConnection<string>>& db, PaymentStrategy& p, double amount);
+	void makePayment(std::unique_ptr<DatabaseConnection<std::string>>& db, Payment& p, double amount);
 
-	pqxx::result getOrderStatusHistory(unique_ptr<DatabaseConnection<string>>& db, int oi) override;
+	pqxx::result getOrderStatusHistory(std::unique_ptr<DatabaseConnection<std::string>>& db, int oi) override;
 
-	void updateOrderStatus(unique_ptr<DatabaseConnection<string>>& db, int id, const string& status) override;
+	void updateOrderStatus(std::unique_ptr<DatabaseConnection<std::string>>& db, int id, const std::string& status) override;
 
-	pqxx::result viewOrderDetails(unique_ptr<DatabaseConnection<string>>& db, int id) override;
+	pqxx::result viewOrderDetails(std::unique_ptr<DatabaseConnection<std::string>>& db, int id) override;
 
-	void runCustomerMenu(unique_ptr<DatabaseConnection<string>>& db);
+	void runCustomerMenu(std::unique_ptr<DatabaseConnection<std::string>>& db);
 
-	unique_ptr<PaymentStrategy> choosePaymentMethod();
+	std::unique_ptr<Payment> choosePaymentMethod();
 };

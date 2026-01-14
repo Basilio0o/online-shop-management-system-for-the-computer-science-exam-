@@ -1,5 +1,6 @@
 #include "../include/Manager.h"
 #include "../include/Order.h"
+using namespace std;
 
 Manager::Manager(unique_ptr<DatabaseConnection<string>>& db, int id, const string& n, const string& e, int l) :
 	User(db, id, n, e, "manager", l) {}
@@ -144,7 +145,7 @@ void Manager::runManagerMenu(unique_ptr<DatabaseConnection<string>>& db) {
 				cout << "[ID][ID заказа][Старый статус][Новый статус][Дата][ID пользователя]" << endl;
 				for (auto row : res) {
 					for (auto field : row) cout << field.c_str() << " ";
-					cout << "\n";
+					cout << endl;
 				}
 				break;
 			}

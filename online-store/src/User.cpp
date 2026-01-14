@@ -1,5 +1,5 @@
 #include "../include/User.h"
-
+using namespace std;
 
 string User::buildOrderItemArray(pqxx::work& txn, vector<pair<shared_ptr<Product>, int>>& list) {
 	if (list.empty()) {

@@ -1,43 +1,41 @@
 #pragma once
-
+#include <algorithm>
 #include <string>
 #include "../include/OrderItem.h"
-#include "../include/PaymentStrategy.h"
+#include "../include/Payment.h"
 #include "../include/DatabaseConnection.h"
 #include <memory>
 #include <vector>
 
-using namespace std;
-
 class Order {
 private:
 	int order_id;
-	string status;
-	vector<OrderItem> items;
-	unique_ptr<PaymentStrategy> payment;
+	std::string status;
+	std::vector<OrderItem> items;
+	std::unique_ptr<Payment> payment;
 public:
-	Order(int id, const string& s);
+	Order(int id, const std::string& s);
 
-	void addItem(shared_ptr<Product> p, int q);
+	void addItem(std::shared_ptr<Product> p, int q);
 
 	void deleteItem(int pi);
 
 	string getStatus();
 
-	void setStatus(const string& s);
+	void setStatus(const std::string& s);
 
 	int getId();
 
 	vector<OrderItem> getItems();
 
-	void setPayment(unique_ptr<PaymentStrategy> p);
+	void setPayment(std::unique_ptr<Payment> p);
 
 	double getTotal_order();
 };
 
 class OrderService {
 public:
-	static vector<shared_ptr<Order>> loadUserOrders(unique_ptr<DatabaseConnection<string>>& db, int user_id);
+	static std::vector<std::shared_ptr<Order>> loadUserOrders(std::unique_ptr<DatabaseConnection<std::string>>& db, int user_id);
 
-	static void loadItems(unique_ptr<DatabaseConnection<string>>& db, Order& order);
+	static void loadItems(std::unique_ptr<DatabaseConnection<std::string>>& db, Order& order);
 };

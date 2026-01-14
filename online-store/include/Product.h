@@ -1,7 +1,4 @@
 #pragma once
-
-using namespace std;
-
 #include "../include/DatabaseConnection.h"
 #include <iostream>
 #include <memory>
@@ -10,15 +7,15 @@ using namespace std;
 class Product {
 private:
 	int product_id;
-	string name;
+	std::string name;
 	double price;
 	int stock_quantity;
 public:
-	Product(int id, const string& n, double p, int sq);
+	Product(int id, const std::string& n, double p, int sq);
 
 	int getProductId();
 
-	string getName();
+	std::string getName();
 
 	double getPrice();
 
@@ -27,5 +24,5 @@ public:
 
 class ProductService {
 public:
-	static shared_ptr<Product> load(std::unique_ptr<DatabaseConnection<string>>& db, int product_id);
+	static std::shared_ptr<Product> load(std::unique_ptr<DatabaseConnection<std::string>>& db, int product_id);
 };

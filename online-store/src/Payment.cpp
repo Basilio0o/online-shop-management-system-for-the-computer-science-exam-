@@ -1,5 +1,4 @@
-#include "../include/PaymentStrategy.h"
-
+#include "../include/Payment.h"
 using namespace std;
 
 CardPayment::CardPayment(const string& cn, const string& ch) : cardNumber(cn), cardHolder(ch) {
@@ -15,7 +14,7 @@ void CardPayment::pay(double amount) {
 	if(amount < 0) {
 		throw runtime_error("Платёж отклонён: сумма должна быть больше нуля.");
 	}
-	cout << "Оплата картой\nСумма: " << amount << "руб.\nКарта: **** **** **** "
+	cout << "Оплата картой\nСумма: " << amount << " руб.\nКарта: **** **** **** "
 			<< cardNumber.substr(cardNumber.size() - 4) << "\nСовершил оплату: " << cardHolder << endl;
 }
 
@@ -29,7 +28,7 @@ void WalletPayment::pay(double amount) {
 	if(amount < 0) {
 		throw runtime_error("Платёж отклонён: сумма должна быть больше нуля.");
 	}
-	cout << "Оплата электронным кошельком\nСумма: " << amount << "руб.\nКошелёк: " << walletId << endl;
+	cout << "Оплата электронным кошельком\nСумма: " << amount << " руб.\nКошелёк: " << walletId << endl;
 }
 
 SBPPayment::SBPPayment(const string& pn) : phoneNumber(pn) {
@@ -42,5 +41,5 @@ void SBPPayment::pay(double amount) {
 	if(amount < 0) {
 		throw runtime_error("Платёж отклонён: сумма должна быть больше нуля.");
 	}
-	cout << "Оплата Через СПБ\nСумма: " << amount << "руб.\nТелефон: " << phoneNumber << endl;
+	cout << "Оплата Через СПБ\nСумма: " << amount << " руб.\nТелефон: " << phoneNumber << endl;
 }

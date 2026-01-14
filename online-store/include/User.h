@@ -1,7 +1,4 @@
 #pragma once
-
-using namespace std;
-
 #include "../include/Order.h"
 #include "../include/Product.h"
 #include "../include/DatabaseConnection.h"
@@ -14,41 +11,41 @@ using namespace std;
 class User {
 private:
 	int user_id;
-	string name;
-	string email;
-	string role;
+	std::string name;
+	std::string email;
+	std::string role;
 	int loyalty_level;
-	vector<shared_ptr<Order>> orders;
+	std::vector<std::shared_ptr<Order>> orders;
 
-	string buildOrderItemArray(pqxx::work& txn, vector<pair<shared_ptr<Product>, int>>& list);
+	std::string buildOrderItemArray(pqxx::work& txn, std::vector<std::pair<std::shared_ptr<Product>, int>>& list);
 public:
-	User(unique_ptr<DatabaseConnection<string>>& db, int id, const string& n, const string& e, const string& r, int l);
+	User(std::unique_ptr<DatabaseConnection<std::string>>& db, int id, const std::string& n, const std::string& e, const std::string& r, int l);
 
 	virtual ~User() = default;
 
-	virtual void updateOrderStatus(unique_ptr<DatabaseConnection<string>>& db, int id, const string& status) = 0;
+	virtual void updateOrderStatus(std::unique_ptr<DatabaseConnection<std::string>>& db, int id, const std::string& status) = 0;
 
 	bool canChangeStatus(const string& role);
 
-	int createOrder(unique_ptr<DatabaseConnection<string>>& db, vector<pair<shared_ptr<Product>, int>>& list);
+	int createOrder(std::unique_ptr<DatabaseConnection<std::string>>& db, std::vector<std::pair<std::shared_ptr<Product>, int>>& list);
 
-	string viewOrderStatus(unique_ptr<DatabaseConnection<string>>& db, int id);
+	std::string viewOrderStatus(std::unique_ptr<DatabaseConnection<std::string>>& db, int id);
 
-	void cancelOrder(unique_ptr<DatabaseConnection<string>>& db, int id);
+	void cancelOrder(std::unique_ptr<DatabaseConnection<std::string>>& db, int id);
 
-	vector<shared_ptr<Order>> orderFilterByStatus(unique_ptr<DatabaseConnection<string>>& db, const string& status);
+	std::vector<std::shared_ptr<Order>> orderFilterByStatus(std::unique_ptr<DatabaseConnection<std::string>>& db, const std::string& status);
 
-	double totalAmount(const string& status);
+	double totalAmount(const std::string& status);
 
-	int numbertByStatus(const string& status);
+	int numbertByStatus(const std::string& status);
 
-	double returnOrder(unique_ptr<DatabaseConnection<string>>& db, int id);
+	double returnOrder(std::unique_ptr<DatabaseConnection<std::string>>& db, int id);
 
 	int getUserId();
 
-	vector<shared_ptr<Order>> getOrderArray();
+	std::vector<std::shared_ptr<Order>> getOrderArray();
 
-	virtual pqxx::result getOrderStatusHistory(unique_ptr<DatabaseConnection<string>>& db, int oi) = 0;
+	virtual pqxx::result getOrderStatusHistory(std::unique_ptr<DatabaseConnection<std::string>>& db, int oi) = 0;
 
-	virtual pqxx::result viewOrderDetails(unique_ptr<DatabaseConnection<string>>& db, int id) = 0;
+	virtual pqxx::result viewOrderDetails(std::unique_ptr<DatabaseConnection<std::string>>& db, int id) = 0;
 };

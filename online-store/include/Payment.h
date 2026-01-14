@@ -1,15 +1,14 @@
 #pragma once
-
 #include <iostream>
 #include <string>
 
-class PaymentStrategy {
+class Payment {
 public:
 	virtual void pay(double amount) = 0;
-	virtual ~PaymentStrategy() = default;
+	virtual ~Payment() = default;
 };
 
-class CardPayment : public PaymentStrategy {
+class CardPayment : public Payment {
 private:
 	std::string cardNumber;
 	std::string cardHolder;
@@ -19,7 +18,7 @@ public:
 	void pay(double amount) override;
 };
 
-class WalletPayment : public PaymentStrategy {
+class WalletPayment : public Payment {
 private:
 	std::string walletId;
 public:
@@ -28,7 +27,7 @@ public:
 	void pay(double amount) override;
 };
 
-class SBPPayment : public PaymentStrategy {
+class SBPPayment : public Payment {
 private:
 	std::string phoneNumber;
 public:

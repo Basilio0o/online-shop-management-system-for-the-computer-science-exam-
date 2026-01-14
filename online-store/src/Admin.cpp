@@ -1,5 +1,5 @@
 #include "../include/Admin.h"
-
+using namespace std;
 
 Admin::Admin(unique_ptr<DatabaseConnection<string>>& db, int id, const string& n, const string& e, int l) :
 	User(db, id, n, e, "admin", l) {}
@@ -259,7 +259,7 @@ void Admin::runAdminMenu(unique_ptr<DatabaseConnection<string>>& db) {
 				cout << "[ID][Сущность][ID сущности][Операция][ID пользователя][Дата выполнения]" << endl;
 				for (auto row : res) {
 					for (auto field : row) cout << field.c_str() << " ";
-					cout << "\n";
+					cout << endl;
 				}
 				break;
 			}

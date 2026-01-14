@@ -1,6 +1,6 @@
 #include "../include/Order.h"
 #include "../include/DatabaseConnection.h"
-#include <algorithm>
+using namespace std;
 
 Order::Order(int id, const string& s) : order_id(id), status(s) {}
 
@@ -25,7 +25,7 @@ int Order::getId() {
 	return order_id;
 }
 
-void Order::setPayment(unique_ptr<PaymentStrategy> p) {
+void Order::setPayment(unique_ptr<Payment> p) {
 	payment = move(p);
 }
 
