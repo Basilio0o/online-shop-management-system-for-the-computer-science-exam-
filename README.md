@@ -21,13 +21,11 @@
 
 * DatabaseConnection<T> — шаблонный класс для работы с PostgreSQL (подключение, запросы)
 * User — базовый абстрактный класс пользователя
-  * чисто виртуальные функции для работы с заказами
 * Admin, Manager, Customer — наследники User
 * Order — заказ пользователя
 * OrderItem — элемент заказа
 * Product — товар
 * Payment — абстрактная стратегия оплаты
-  * CardPayment, WalletPayment, SBPPayment
 
 ### 2.2 Применение ООП
 
