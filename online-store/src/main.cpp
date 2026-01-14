@@ -65,6 +65,7 @@ int main() {
 			break;
 		}
 		default : {
+			cout << "Ошибка выбора. Попробуйте ещё раз" << endl;
 		}
 	}
 
