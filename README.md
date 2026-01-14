@@ -293,7 +293,7 @@ ID вашего кошелька: 0Asxa2210a2ca02hziq24n
 ---
 
 ## 9. Структура репозитория
-
+```
 /online-shop-management-system-for-the-computer-science-exam-
 |___ /online-store
 |     |__ src/ # файлы .cpp
@@ -304,3 +304,4 @@ ID вашего кошелька: 0Asxa2210a2ca02hziq24n
 |___ README.md
 |
 |___ .gitignore
+```
